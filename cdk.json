@@ -1,0 +1,25 @@
+{
+  "app": "python3 app.py",
+  "watch": {
+    "include": [
+      "**"
+    ],
+    "exclude": [
+      "README.md",
+      "cdk*.json",
+      "requirements*.txt",
+      "source.bat",
+      "**/__init__.py",
+      "**/__pycache__",
+      "tests"
+    ]
+  },
+  "context": {
+    "certificate_arn": "arn:aws:acm:us-east-1:985923204824:certificate/96024c56-b6e1-4576-ab7a-511e7174c211",
+    "hosted_zone_id": "Z02013281HPCE51F16BDM",
+    "hosted_zone_name": "bryanturns.com",
+    "projects": [{"project_name": "PersonalWebsite", "domain_name": "bryanturns.com"}, {"project_name": "ClimbingMap", "domain_name": "climbing.bryanturns.com"}],
+    "account": "985923204824",
+    "region": "us-east-1"
+  }
+}
