@@ -62,10 +62,8 @@ class FrontendStack(Stack):
                     origin_access_control=s3_oac,
                 ),
                 viewer_protocol_policy=aws_cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-                # There may be some situations where I want to invalidate cache more often
-                # Using this allows me to control that. I just need s3 to serve the correct
-                # headers for the correct files.
-                cache_policy=aws_cloudfront.CachePolicy.USE_ORIGIN_CACHE_CONTROL_HEADERS,
+                # CACHING_OPTIMIZED still let's you set Cache-Control headers, but it has a minimum TTL of 1s so no-cache will not work
+                cache_policy=aws_cloudfront.CachePolicy.CACHING_OPTIMIZED,
             ),
             domain_names=[domain_name],
             certificate=cert,
