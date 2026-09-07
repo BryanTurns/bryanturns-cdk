@@ -1,5 +1,7 @@
 from aws_cdk import (
+    CfnOutput,
     Environment,
+    RemovalPolicy,
     Stack,
     aws_cloudfront,
     aws_cloudfront_origins,
@@ -46,11 +48,31 @@ class FrontendStack(Stack):
             "S3-Bucket",
             block_public_access=aws_s3.BlockPublicAccess.BLOCK_ALL,
             versioned=False,
+            removal_policy=RemovalPolicy.DESTROY,
         )
 
         # Sign requests that go to the bucket with AWS Signature Version 4
         s3_oac = aws_cloudfront.S3OriginAccessControl(
             self, "Frontend-S3-OAC", signing=aws_cloudfront.Signing.SIGV4_ALWAYS
+        )
+
+        directory_index_function = aws_cloudfront.Function(
+            self,
+            "DirectoryIndexFunction",
+            code=aws_cloudfront.FunctionCode.from_inline("""
+function handler(event) {
+    var request = event.request;
+    var uri = request.uri;
+
+    if (uri.endsWith('/')) {
+        request.uri += 'index.html';
+    } else if (!uri.includes('.')) {
+        request.uri += '/index.html';
+    }
+
+    return request;
+}
+"""),
         )
 
         distribution = aws_cloudfront.Distribution(
@@ -64,6 +86,12 @@ class FrontendStack(Stack):
                 viewer_protocol_policy=aws_cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                 # CACHING_OPTIMIZED still let's you set Cache-Control headers, but it has a minimum TTL of 1s so no-cache will not work
                 cache_policy=aws_cloudfront.CachePolicy.CACHING_OPTIMIZED,
+                function_associations=[
+                    aws_cloudfront.FunctionAssociation(
+                        function=directory_index_function,
+                        event_type=aws_cloudfront.FunctionEventType.VIEWER_REQUEST,
+                    )
+                ],
             ),
             domain_names=[domain_name],
             certificate=cert,
@@ -79,3 +107,5 @@ class FrontendStack(Stack):
                 aws_route53_targets.CloudFrontTarget(distribution)
             ),
         )
+
+        CfnOutput(self, "S3FrontendBucket", value=s3_bucket.bucket_name)
