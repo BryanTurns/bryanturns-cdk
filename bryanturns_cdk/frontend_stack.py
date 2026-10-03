@@ -49,11 +49,16 @@ class FrontendStack(Stack):
             block_public_access=aws_s3.BlockPublicAccess.BLOCK_ALL,
             versioned=False,
             removal_policy=RemovalPolicy.DESTROY,
-        )
-
-        # Sign requests that go to the bucket with AWS Signature Version 4
-        s3_oac = aws_cloudfront.S3OriginAccessControl(
-            self, "Frontend-S3-OAC", signing=aws_cloudfront.Signing.SIGV4_ALWAYS
+            auto_delete_objects=True,
+            cors=[
+                aws_s3.CorsRule(
+                    allowed_origins=["https://bryanturns.com", "http://localhost:5173"],
+                    allowed_methods=[
+                        aws_s3.HttpMethods.GET
+                    ],
+                    allowed_headers=["*"]
+                )
+            ]
         )
 
         directory_index_function = aws_cloudfront.Function(
@@ -80,8 +85,7 @@ function handler(event) {
             "CF-Distribution",
             default_behavior=aws_cloudfront.BehaviorOptions(
                 origin=aws_cloudfront_origins.S3BucketOrigin.with_origin_access_control(
-                    s3_bucket,
-                    origin_access_control=s3_oac,
+                    s3_bucket
                 ),
                 viewer_protocol_policy=aws_cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                 # CACHING_OPTIMIZED still let's you set Cache-Control headers, but it has a minimum TTL of 1s so no-cache will not work
